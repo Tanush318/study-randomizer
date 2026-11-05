@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Research Study</title>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -24,11 +30,36 @@
       background: white;
       border-radius: 12px;
       text-align: center;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
     }
 
-    a {
-      display: inline-block;
+    h2 {
+      margin-top: 0;
+    }
+
+    p {
+      color: #555;
+      line-height: 1.5;
+    }
+
+    #loader {
+      width: 35px;
+      height: 35px;
+      margin: 25px auto;
+      border: 4px solid #ddd;
+      border-top: 4px solid #222;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #openLink {
+      display: none;
       margin-top: 20px;
       padding: 13px 24px;
       background: #222;
@@ -40,48 +71,97 @@
 </head>
 
 <body>
+
   <div class="container">
+
     <h2>Research Study</h2>
-    <p id="status">Assigning your questionnaire...</p>
-    <div id="result"></div>
+
+    <p id="status">
+      Assigning your questionnaire. Please wait.
+    </p>
+
+    <div id="loader"></div>
+
+    <a id="openLink" href="#">
+      Open questionnaire
+    </a>
+
   </div>
 
   <script>
+
     const APPS_SCRIPT_URL =
       "https://script.google.com/macros/s/AKfycbyXLB_jSgZMpAShrgXJAteVmMSevn7n1vBTF4KTkcTRzF5lfVIX8TTKpW3ST_446V5v_A/exec";
 
-    function assigned(data) {
-      document.getElementById("status").innerText =
-        "Assignment successful: Condition " + data.condition;
+    let assignmentReceived = false;
 
-      const link = document.createElement("a");
+    // Called by Google Apps Script
+    window.assignmentCallback = function(data) {
+
+      if (assignmentReceived) return;
+
+      if (!data || !data.destination ||
+          !["A", "B"].includes(data.condition)) {
+
+        showError("Invalid assignment response.");
+        return;
+      }
+
+      assignmentReceived = true;
+
+      document.getElementById("status").innerText =
+        "Assigned Condition " + data.condition +
+        ". Opening questionnaire...";
+
+      document.getElementById("loader").style.display =
+        "none";
+
+      const link = document.getElementById("openLink");
 
       link.href = data.destination;
-      link.target = "_self";
-      link.innerText = "Open questionnaire";
+      link.style.display = "inline-block";
 
-      document.getElementById("result").appendChild(link);
-    }
+      // Automatically open the assigned form
+      window.location.href = data.destination;
+    };
 
-    function failed() {
+    function showError(message) {
+
+      if (assignmentReceived) return;
+
       document.getElementById("status").innerText =
-        "Assignment failed. Please reload the page.";
+        message + " Please reload the page.";
+
+      document.getElementById("loader").style.display =
+        "none";
     }
 
-    const callbackName = "assignmentCallback";
-
-    window[callbackName] = assigned;
-
+    // Request random assignment
     const script = document.createElement("script");
+
+    script.async = true;
 
     script.src =
       APPS_SCRIPT_URL +
-      "?callback=" + callbackName +
-      "&t=" + Date.now();
+      "?callback=assignmentCallback&t=" +
+      Date.now();
 
-    script.onerror = failed;
+    script.onerror = function() {
+      showError("Unable to connect to the assignment server.");
+    };
 
     document.head.appendChild(script);
+
+    // Detect requests that never return
+    setTimeout(function() {
+
+      if (!assignmentReceived) {
+        showError("The assignment server is taking too long.");
+      }
+
+    }, 20000);
+
   </script>
+
 </body>
 </html>
