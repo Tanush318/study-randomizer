@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Research Study</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f4f5f7;
+      font-family: Arial, sans-serif;
+      color: #222;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 420px;
+      padding: 32px 24px;
+      background: white;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    p {
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .loader {
+      width: 35px;
+      height: 35px;
+      margin: 25px auto;
+      border: 4px solid #ddd;
+      border-top: 4px solid #333;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #retry {
+      display: none;
+      margin-top: 20px;
+      padding: 12px 22px;
+      background: #222;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h2>Research Study</h2>
+
+    <p id="status">
+      Assigning your questionnaire. Please wait.
+    </p>
+
+    <div class="loader" id="loader"></div>
+
+    <button id="retry" onclick="startRandomizer()">
+      Try Again
+    </button>
+
+  </div>
+
+  <script>
+
+    // Your deployed Google Apps Script URL
+    const APPS_SCRIPT_URL =
+      "https://script.google.com/macros/s/AKfycbyXLB_jSgZMpAShrgXJAteVmMSevn7n1vBTF4KTkcTRzF5lfVIX8TTKpW3ST_446V5v_A/exec";
+
+    let requestStarted = false;
+
+    function assigned(data) {
+
+      if (data && data.destination) {
+
+        document.getElementById("status").innerText =
+          "Assignment successful. Opening questionnaire...";
+
+        window.location.replace(data.destination);
+
+      } else {
+
+        showError();
+
+      }
+    }
+
+    function showError() {
+
+      document.getElementById("status").innerText =
+        "Unable to assign your questionnaire. Please try again.";
+
+      document.getElementById("loader").style.display =
+        "none";
+
+      document.getElementById("retry").style.display =
+        "inline-block";
+
+      requestStarted = false;
+    }
+
+    function startRandomizer() {
+
+      if (requestStarted) return;
+
+      requestStarted = true;
+
+      document.getElementById("status").innerText =
+        "Assigning your questionnaire. Please wait.";
+
+      document.getElementById("loader").style.display =
+        "block";
+
+      document.getElementById("retry").style.display =
+        "none";
+
+      const callbackName =
+        "assignmentCallback_" + Date.now();
+
+      window[callbackName] = function(data) {
+
+        assigned(data);
+
+        delete window[callbackName];
+      };
+
+      const script = document.createElement("script");
+
+      script.src =
+        APPS_SCRIPT_URL +
+        "?callback=" + callbackName +
+        "&t=" + Date.now();
+
+      script.onerror = function() {
+
+        delete window[callbackName];
+
+        script.remove();
+
+        showError();
+      };
+
+      document.head.appendChild(script);
+    }
+
+    startRandomizer();
+
+  </script>
+
+</body>
+</html>
