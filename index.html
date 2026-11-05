@@ -1,21 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Research Study</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
     body {
       margin: 0;
       min-height: 100vh;
@@ -34,151 +24,64 @@
       background: white;
       border-radius: 12px;
       text-align: center;
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     }
 
-    h2 {
-      margin-top: 0;
-    }
-
-    p {
-      color: #555;
-      line-height: 1.5;
-    }
-
-    .loader {
-      width: 35px;
-      height: 35px;
-      margin: 25px auto;
-      border: 4px solid #ddd;
-      border-top: 4px solid #333;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    #retry {
-      display: none;
+    a {
+      display: inline-block;
       margin-top: 20px;
-      padding: 12px 22px;
+      padding: 13px 24px;
       background: #222;
       color: white;
-      border: none;
+      text-decoration: none;
       border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
     }
   </style>
 </head>
 
 <body>
-
   <div class="container">
-
     <h2>Research Study</h2>
-
-    <p id="status">
-      Assigning your questionnaire. Please wait.
-    </p>
-
-    <div class="loader" id="loader"></div>
-
-    <button id="retry" onclick="startRandomizer()">
-      Try Again
-    </button>
-
+    <p id="status">Assigning your questionnaire...</p>
+    <div id="result"></div>
   </div>
 
   <script>
-
-    // Your deployed Google Apps Script URL
     const APPS_SCRIPT_URL =
       "https://script.google.com/macros/s/AKfycbyXLB_jSgZMpAShrgXJAteVmMSevn7n1vBTF4KTkcTRzF5lfVIX8TTKpW3ST_446V5v_A/exec";
 
-    let requestStarted = false;
-
     function assigned(data) {
-
-      if (data && data.destination) {
-
-        document.getElementById("status").innerText =
-          "Assignment successful. Opening questionnaire...";
-
-        window.location.replace(data.destination);
-
-      } else {
-
-        showError();
-
-      }
-    }
-
-    function showError() {
-
       document.getElementById("status").innerText =
-        "Unable to assign your questionnaire. Please try again.";
+        "Assignment successful: Condition " + data.condition;
 
-      document.getElementById("loader").style.display =
-        "none";
+      const link = document.createElement("a");
 
-      document.getElementById("retry").style.display =
-        "inline-block";
+      link.href = data.destination;
+      link.target = "_self";
+      link.innerText = "Open questionnaire";
 
-      requestStarted = false;
+      document.getElementById("result").appendChild(link);
     }
 
-    function startRandomizer() {
-
-      if (requestStarted) return;
-
-      requestStarted = true;
-
+    function failed() {
       document.getElementById("status").innerText =
-        "Assigning your questionnaire. Please wait.";
-
-      document.getElementById("loader").style.display =
-        "block";
-
-      document.getElementById("retry").style.display =
-        "none";
-
-      const callbackName =
-        "assignmentCallback_" + Date.now();
-
-      window[callbackName] = function(data) {
-
-        assigned(data);
-
-        delete window[callbackName];
-      };
-
-      const script = document.createElement("script");
-
-      script.src =
-        APPS_SCRIPT_URL +
-        "?callback=" + callbackName +
-        "&t=" + Date.now();
-
-      script.onerror = function() {
-
-        delete window[callbackName];
-
-        script.remove();
-
-        showError();
-      };
-
-      document.head.appendChild(script);
+        "Assignment failed. Please reload the page.";
     }
 
-    startRandomizer();
+    const callbackName = "assignmentCallback";
 
+    window[callbackName] = assigned;
+
+    const script = document.createElement("script");
+
+    script.src =
+      APPS_SCRIPT_URL +
+      "?callback=" + callbackName +
+      "&t=" + Date.now();
+
+    script.onerror = failed;
+
+    document.head.appendChild(script);
   </script>
-
 </body>
 </html>
